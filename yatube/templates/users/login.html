@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}Войти{% endblock title %}
+{% block content %}
+  {% include "includes/form.html" with header="Войти на сайт" button="Войти" additional_button_url="users:password_reset_form" additional_button_text="Забыли пароль?" %}
+{% endblock content %}

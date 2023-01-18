@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if request.resolver_match.view_name == "posts:follow_index" %}
+    Мои подписки
+  {% else %}
+    Последние обновления на сайте
+  {% endif %}
+{% endblock title %}
+{% block content %}
+  <h1>
+    {% if request.resolver_match.view_name == "posts:follow_index" %}
+      Мои подписки
+    {% else %}
+      Последние обновления на сайте
+    {% endif %}
+  </h1>
+  {% include "posts/includes/switcher.html" %}
+  {% for post in object_list %}
+    {% include "posts/includes/post.html" with show_group_link=True show_author=True %}
+  {% endfor %}
+  {% include "posts/includes/paginator.html" %}
+{% endblock content %}

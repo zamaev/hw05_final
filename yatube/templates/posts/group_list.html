@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}
+  Записи сообщества {{ group.title }}
+{% endblock title %}
+{% block content %}
+  <h1>{{ group.title }}</h1>
+  {{ group.description|linebreaks }}
+  {% for post in object_list %}
+    {% include "posts/includes/post.html" with show_author=True %}
+  {% endfor %}
+  {% include "posts/includes/paginator.html" %}
+{% endblock content %}
