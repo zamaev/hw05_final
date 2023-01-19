@@ -21,9 +21,6 @@
           {% endfor %}
         {% endif %}
         <form method="post"
-          {% if action_url %}
-            action="{% url action_url %}"
-          {% endif %}
           {% if for_image %}
             enctype="multipart/form-data"
           {% endif %}

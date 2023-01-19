@@ -9,3 +9,13 @@ class CreatedModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class TextModel(models.Model):
+    text = models.TextField(
+        verbose_name='Текст',
+        help_text='Введите текст',
+    )
+
+    class Meta:
+        abstract = True

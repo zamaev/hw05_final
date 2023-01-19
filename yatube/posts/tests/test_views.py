@@ -9,7 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.urls import reverse
 
-from posts.models import User, Group, Post
+from posts.models import User, Group, Post, Follow
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -20,6 +20,8 @@ class PostViewTests(TestCase):
         super().setUpClass()
         cls.user = User.objects.create(username='user')
         cls.follower = User.objects.create(username='follower')
+        cls.unfollower = User.objects.create(username='unfollower')
+        Follow.objects.create(user=cls.follower, author=cls.user)
         cls.empty_group = Group.objects.create(
             title='Пустая',
             slug='empty',
@@ -64,6 +66,8 @@ class PostViewTests(TestCase):
         self.auth_client.force_login(self.user)
         self.follower_client = Client()
         self.follower_client.force_login(self.follower)
+        self.unfollower_client = Client()
+        self.unfollower_client.force_login(self.unfollower)
 
     def tearDown(self):
         cache.clear()
@@ -202,23 +206,28 @@ class PostViewTests(TestCase):
         self.assertEqual(self.post_with_group.image.name,
                          response.context['post'].image.name)
 
-    def test_follow_unfollow(self):
+    def test_follow(self):
         """Авторизованный пользователь может подписываться
-        на других пользователей и удалять их из подписок.
+        на других пользователей.
         """
-        self.follower_client.get(
+        follower_count = self.unfollower.follower.count()
+        self.unfollower_client.get(
             reverse('posts:profile_follow', args=(self.user.username,)))
-        self.assertEqual(self.follower.follower.count(), 1)
+        self.assertEqual(self.unfollower.follower.count(), follower_count + 1)
+
+    def test_unfollow(self):
+        """Авторизованный пользователь может отписаться
+        от других пользователей.
+        """
+        follower_count = self.follower.follower.count()
         self.follower_client.get(
             reverse('posts:profile_unfollow', args=(self.user.username,)))
-        self.assertEqual(self.follower.follower.count(), 0)
+        self.assertEqual(self.follower.follower.count(), follower_count - 1)
 
     def test_following_post_in_followers_page(self):
-        """Новая запись пользователя появляется в ленте тех,
-        кто на него подписан и не появляется в ленте тех, кто не подписан.
+        """Новая запись автора появляется в ленте тех,
+        кто на него подписан.
         """
-        self.follower_client.get(
-            reverse('posts:profile_follow', args=(self.user.username,)))
         response = self.follower_client.get(
             reverse('posts:follow_index'))
         self.assertIn('page_obj', response.context)
@@ -227,6 +236,15 @@ class PostViewTests(TestCase):
             response.context['page_obj'][0],
             self.user.posts.first(),
         )
+
+    def test_following_post_not_in_unfollowers_page(self):
+        """Новая запись автора не появляется в ленте тех,
+        кто на него не подписан.
+        """
+        response = self.unfollower_client.get(
+            reverse('posts:follow_index'))
+        self.assertIn('page_obj', response.context)
+        self.assertEqual(len(response.context['page_obj']), 0)
 
     def check_posts_are_same(self, post1, post2):
         """Проверка постов на идентичность."""
@@ -248,7 +266,9 @@ class PaginatorViewTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create(username='user')
+        cls.author = User.objects.create(username='user')
+        cls.follower = User.objects.create(username='follower')
+        Follow.objects.create(user=cls.follower, author=cls.author)
         cls.group = Group.objects.create(
             title='Группа',
             slug='group',
@@ -259,28 +279,29 @@ class PaginatorViewTest(TestCase):
             Post.objects.create(
                 text='Длинный текст поста ' + str(i),
                 group=cls.group,
-                author=cls.user,
+                author=cls.author,
             )
 
     def setUp(self):
-        self.user = PaginatorViewTest.user
-        self.group = PaginatorViewTest.group
-        self.posts_count_for_test = PaginatorViewTest.posts_count_for_test
+        self.follower_client = Client()
+        self.follower_client.force_login(self.follower)
 
     def test_list_pages_check_records_count(self):
         """Кол-во постов в пагинации на каждой из страниц со списками."""
-        urls = [
-            reverse('posts:index'),
-            reverse('posts:group_list', args=(self.group.slug,)),
-            reverse('posts:profile', args=(self.user.username,)),
-        ]
-        for url in urls:
+        url_clients = {
+            reverse('posts:index'): self.client,
+            reverse('posts:group_list', args=(self.group.slug,)): self.client,
+            reverse('posts:profile',
+                    args=(self.author.username,)): self.client,
+            reverse('posts:follow_index'): self.follower_client,
+        }
+        for url, client in url_clients.items():
             with self.subTest(value=url):
                 pages = ceil(
                     self.posts_count_for_test / settings.POSTS_PER_PAGE
                 )
                 for page in range(1, pages + 1):
-                    response = self.client.get(url, {'page': page})
+                    response = client.get(url, {'page': page})
                     self.assertIn('page_obj', response.context)
                     if page == pages:
                         posts_count_on_page = (self.posts_count_for_test

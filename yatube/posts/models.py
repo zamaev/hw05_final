@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse_lazy
 
-from core.models import CreatedModel
+from core.models import CreatedModel, TextModel
 
 User = get_user_model()
 
@@ -30,13 +30,9 @@ class Group(models.Model):
         return f'{self.title}'
 
 
-class Post(CreatedModel):
+class Post(CreatedModel, TextModel):
     """Model for posts."""
 
-    text = models.TextField(
-        verbose_name='Текст',
-        help_text='Текст поста',
-    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -58,9 +54,6 @@ class Post(CreatedModel):
         blank=True,
     )
 
-    def get_absolute_url(self):
-        return reverse_lazy('posts:post_detail', args=(self.pk,))
-
     class Meta:
         verbose_name = 'Пост'
         verbose_name_plural = 'Посты'
@@ -69,8 +62,11 @@ class Post(CreatedModel):
     def __str__(self):
         return f'{self.text[:15]}'
 
+    def get_absolute_url(self):
+        return reverse_lazy('posts:post_detail', args=(self.pk,))
 
-class Comment(CreatedModel):
+
+class Comment(CreatedModel, TextModel):
     """Model of comments."""
 
     post = models.ForeignKey(
@@ -83,10 +79,6 @@ class Comment(CreatedModel):
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-    )
-    text = models.TextField(
-        verbose_name='Текст',
-        help_text='Текст нового комментария',
     )
 
     class Meta:
@@ -116,6 +108,12 @@ class Follow(CreatedModel):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'author'],
+                name='unique_following',
+            )
+        ]
 
     def __str__(self):
-        return f'{self.user} - {self.author}'
+        return f'{self.user} подписан на {self.author}'

@@ -7,9 +7,9 @@
   {% endif %}
 {% endblock title %}
 {% block content %}
-  {% if request.resolver_match.view_name == "posts:post_create" %}
-    {% include "includes/form.html" with header="Новая запись" button="Добавить" for_image=True %}
-  {% else %}
+  {% if is_edit %}
     {% include "includes/form.html" with header="Редактировать запись" button="Сохранить" for_image=True %}
+  {% else %}
+    {% include "includes/form.html" with header="Новая запись" button="Добавить" for_image=True %}
   {% endif %}
 {% endblock content %}

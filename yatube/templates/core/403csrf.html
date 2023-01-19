@@ -1,3 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Custom 403{% endblock title %}
-{% block content %}<h1>Custom CSRF check error. 403</h1>{% endblock content %}
+{% block title %}Ошибка CSRF{% endblock title %}
+{% block content %}
+  <h1>Ошибка 403 CSRF</h1>
+  <p>В вашей форме не хватает ключа.</p>
+{% endblock content %}
