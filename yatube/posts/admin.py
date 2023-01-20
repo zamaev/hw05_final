@@ -5,7 +5,7 @@ from posts.models import Group, Post, Comment, Follow
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    prepopulated_fields = {"slug": ("title",)}
+    prepopulated_fields = {'slug': ('title',)}
 
 
 @admin.register(Post)

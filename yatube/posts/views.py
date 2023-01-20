@@ -31,14 +31,14 @@ def group_posts(request, slug):
 def profile(request, username):
     author = get_object_or_404(User, username=username)
     page_obj = get_page_obj(request, author.posts.all())
-    context = {
+    return render(request, 'posts/profile.html', {
         'author': author,
         'page_obj': page_obj,
-    }
-    if request.user.is_authenticated:
-        following = request.user.follower.filter(author=author).exists()
-        context['following'] = following
-    return render(request, 'posts/profile.html', context)
+        'following': (
+            request.user.is_authenticated
+            and request.user.follower.filter(author=author).exists()
+        ),
+    })
 
 
 def post_detail(request, post_id):
@@ -122,8 +122,7 @@ def profile_follow(request, username):
             'user': request.user,
             'author': author,
         }
-        if not Follow.objects.filter(**params).exists():
-            Follow.objects.create(**params)
+        Follow.objects.get_or_create(**params)
 
     return redirect('posts:profile', username=username)
 
