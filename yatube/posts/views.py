@@ -134,6 +134,6 @@ def profile_unfollow(request, username):
         'user': request.user,
         'author': author,
     }
-    Follow.objects.get(**params).delete()
+    Follow.objects.filter(**params).delete()
 
     return redirect('posts:profile', username=username)
