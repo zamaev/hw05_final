@@ -11,7 +11,10 @@ from posts.models import User, Group, Post, Follow
 @cache_page(20, key_prefix='index_page')
 @vary_on_cookie
 def index(request):
-    page_obj = get_page_obj(request, Post.objects.all())
+    page_obj = get_page_obj(
+        request,
+        Post.objects.select_related('author').select_related('group').all()
+    )
 
     return render(request, 'posts/index.html', {
         'page_obj': page_obj,
